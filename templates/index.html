@@ -1,0 +1,216 @@
+<!DOCTYPE html>  
+<html lang="ja">  
+<head>  
+    <meta charset="UTF-8">  
+    <title>技術伝承 下準備アプリ</title>  
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">  
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">  
+</head>  
+<body>  
+<div class="container-fluid">  
+    <div class="row">  
+        <!-- サイドバー -->  
+        <div class="col-md-3 sidebar">  
+            <h4>トピック選択</h4>  
+            <ul class="topic-list">  
+                {% for t in topics %}  
+                <li>  
+                    <button type="button" class="btn btn-link topic-expand-btn {% if t.id == selected_topic %}active{% endif %}" data-topic="{{ t.id }}">  
+                        {{ t.name }}  
+                    </button>  
+                    <ul class="question-list" id="questions-{{ t.id }}" style="{% if t.id != selected_topic %}display:none;{% endif %}">  
+                        {% for q in t.questions %}  
+                        <li>  
+                            <form method="POST" style="display:inline;">  
+                                <input type="hidden" name="select_topic" value="{{ t.id }}">  
+                                <input type="hidden" name="select_question" value="{{ loop.index0 }}">  
+                                <button type="submit" class="btn btn-outline-secondary btn-sm sidebar-question-btn {% if t.id == selected_topic and loop.index0 == selected_question %}active{% endif %}">  
+                                    {{ q }}  
+                                </button>  
+                            </form>  
+                        </li>  
+                        {% endfor %}  
+                    </ul>  
+                </li>  
+                {% endfor %}  
+            </ul>  
+            <hr>  
+            <button class="btn btn-primary mb-2" id="summarizeBtn">観点まとめ</button>  
+            <div id="pointsSummaryBlock">  
+                {% if session.get("observed_points") %}  
+                <ul>  
+                    {% for pt in session.get("observed_points") %}  
+                    {% if pt.strip() %}  
+                    <li>{{ pt }}</li>  
+                    {% endif %}  
+                    {% endfor %}  
+                </ul>  
+                <a class="btn btn-success" href="/download_points">観点リストをダウンロード</a>  
+                {% endif %}  
+            </div>  
+        </div>  
+        <!-- メインコンテンツ -->  
+        <div class="col-md-9 main-content">  
+            <div id="mainHeader" class="d-flex align-items-center justify-content-between mb-3">  
+                <h1 class="app-title mb-0">技術伝承 下準備アプリ</h1>  
+                <div id="loadingInline">  
+                    <span class="spinner-border spinner-border-sm text-primary" role="status"></span>  
+                    <span class="loading-text">応答中です。しばらくお待ちください…</span>  
+                </div>  
+            </div>  
+            <div class="mb-3">  
+                <h4>{{ topic_full.name }}</h4>  
+                <pre style="white-space: pre-wrap; font-size:1em;">{{ topic_desc }}</pre>  
+            </div>  
+            {% with messages = get_flashed_messages() %}  
+            {% if messages %}  
+            <ul class="flashes">  
+                {% for m in messages %}<li>{{ m }}</li>{% endfor %}  
+            </ul>  
+            {% endif %}  
+            {% endwith %}  
+            <div id="chatBox" class="chat-box">  
+                {% for msg in chat_history %}  
+                <div class="message-container {% if msg.role=='user' %}user{% else %}assistant{% endif %}">  
+                    <div class="message-bubble">  
+                        {% if msg.role=='user' %}  
+                        <strong>あなた:</strong>  
+                        <p>{{ msg.content|e }}</p>  
+                        {% else %}  
+                        <strong>アシスタント:</strong>  
+                        {% if msg.type=='html' %}  
+                        <div class="assistant-message">{{ msg.content|safe }}</div>  
+                        {% else %}  
+                        <p>{{ msg.content|e }}</p>  
+                        {% endif %}  
+                        {% endif %}  
+                    </div>  
+                </div>  
+                {% endfor %}  
+            </div>  
+            <!-- チャット入力欄 -->  
+            <form id="chatForm" class="chat-input">  
+                <div class="form-row">  
+                    <div class="col-10">  
+                        <textarea name="prompt" id="promptTextarea" class="form-control" rows="2" placeholder="アシスタントの質問にお答えください"></textarea>  
+                    </div>  
+                    <div class="col-2">  
+                        <button type="submit" id="sendButton" class="btn btn-success btn-block">送信</button>  
+                    </div>  
+                </div>  
+            </form>  
+        </div>  
+    </div>  
+</div>  
+<script>  
+document.addEventListener('DOMContentLoaded', function() {  
+    // トピック展開切替  
+    document.querySelectorAll('.topic-expand-btn').forEach(function(btn){  
+        btn.addEventListener('click', function(){  
+            const topicId = btn.getAttribute('data-topic');  
+            document.querySelectorAll('.question-list').forEach(function(ul){  
+                ul.style.display = 'none';  
+            });  
+            document.querySelectorAll('.topic-expand-btn').forEach(function(bb){  
+                bb.classList.remove('active');  
+            });  
+            document.getElementById('questions-' + topicId).style.display = 'block';  
+            btn.classList.add('active');  
+        });  
+    });  
+  
+    const promptTextarea = document.getElementById('promptTextarea');  
+    const chatForm = document.getElementById('chatForm');  
+    const chatBox = document.getElementById('chatBox');  
+    const sendButton = document.getElementById('sendButton');  
+    const loadingInline = document.getElementById('loadingInline');  
+  
+    function scrollChatToBottom() {  
+        chatBox.scrollTop = chatBox.scrollHeight;  
+    }  
+    function appendUserMessage(message) {  
+        const c = document.createElement('div');  
+        c.className = 'message-container user';  
+        c.innerHTML = `<div class="message-bubble">   <strong>あなた:</strong><p>${escapeHtml(message)}</p>   </div>`;  
+        chatBox.appendChild(c);  
+        scrollChatToBottom();  
+    }  
+    function appendAssistantMessage(html) {  
+        const c = document.createElement('div');  
+        c.className = 'message-container assistant';  
+        c.innerHTML = `<div class="message-bubble">   <strong>アシスタント:</strong>   <div class="assistant-message">${html}</div>   </div>`;  
+        chatBox.appendChild(c);  
+        scrollChatToBottom();  
+    }  
+    function escapeHtml(str) {  
+        if (!str) return '';  
+        return str.replace(/[&<>"']/g, function(m) {  
+            return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m];  
+        });  
+    }  
+    function showLoading() {  
+        loadingInline.style.display = 'flex';  
+    }  
+    function hideLoading() {  
+        loadingInline.style.display = 'none';  
+    }  
+    hideLoading();  
+    chatForm.addEventListener('submit', e => {  
+        e.preventDefault();  
+        const prompt = promptTextarea.value.trim();  
+        if (!prompt) return;  
+        appendUserMessage(prompt);  
+        promptTextarea.value = '';  
+        sendButton.disabled = true;  
+        showLoading();  
+        fetch('/send_message', {  
+            method: 'POST',  
+            headers: {'Content-Type': 'application/json'},  
+            body: JSON.stringify({prompt})  
+        })  
+        .then(r => r.json())  
+        .then(data => {  
+            if (data.response) appendAssistantMessage(data.response);  
+            sendButton.disabled = false;  
+            hideLoading();  
+        }).catch(e => {  
+            sendButton.disabled = false;  
+            hideLoading();  
+            alert('エラーが発生しました');  
+        });  
+    });  
+    promptTextarea.addEventListener('keydown', e => {  
+        if (e.key==='Enter' && !e.shiftKey) {  
+            e.preventDefault();  
+            chatForm.dispatchEvent(new Event('submit'));  
+        }  
+    });  
+    scrollChatToBottom();  
+  
+    // 観点抽出ボタン連動  
+    const summarizeBtn = document.getElementById('summarizeBtn');  
+    const pointsSummaryBlock = document.getElementById('pointsSummaryBlock');  
+    if (summarizeBtn) {  
+        summarizeBtn.addEventListener('click', function() {  
+            summarizeBtn.disabled = true;  
+            summarizeBtn.textContent = "抽出中...";  
+            fetch('/summarize_points', {method: "POST"})  
+            .then(r => r.json())  
+            .then(data => {  
+                const summary = data.points_summary || '';  
+                const points = summary.split("\n").map(l => l.replace(/^(\s*[・\-●\*]?\s*)/, '').trim()).filter(l => l.length);  
+                pointsSummaryBlock.innerHTML = `   <div>   <ul>${points.map(l => `<li>${escapeHtml(l)}</li>`).join('')}</ul>   </div>   <a class="btn btn-success" href="/download_points">観点リストをダウンロード</a>   `;  
+                summarizeBtn.disabled = false;  
+                summarizeBtn.textContent = "観点まとめ";  
+            })  
+            .catch(e => {  
+                pointsSummaryBlock.innerHTML = '<p>観点抽出に失敗しました</p>';  
+                summarizeBtn.disabled = false;  
+                summarizeBtn.textContent = "観点まとめ";  
+            });  
+        });  
+    }  
+});  
+</script>  
+</body>  
+</html>  
