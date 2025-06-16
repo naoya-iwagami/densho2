@@ -35,10 +35,7 @@ TOPICS = [
     {  
         "id": "customer",  
         "name": "顧客対応・クレーム対応の実例とノウハウ",  
-        "description": """過去の顧客トラブルやクレームの種類・重大度・対応事例を知りたい  
-顧客との取り決め事項、合意内容、NG判断の基準  
-顧客にどのような説明・提案をして納得を得たか、うまくいった・いかなかった例  
-クレーム対応時の社内外連絡体制、役割分担、エスカレーション基準""",  
+        "description": "過去の顧客トラブルの対応や基準、社内外連絡・エスカレーションなどの実例やノウハウ。",  
         "questions": [  
             "どのような重大クレームが過去に発生し、どんな対応で顧客の納得を得ましたか？",  
             "顧客との取り決め事項はどのように管理・共有していますか？",  
@@ -48,10 +45,7 @@ TOPICS = [
     {  
         "id": "standard",  
         "name": "規格・基準の設定経緯と運用",  
-        "description": """規格や基準値がどのような経緯・理由で設定されたか（顧客要望・クレーム・自主基準など）  
-規格・基準の見直し・緩和・廃止の際に絶対に外してはいけないポイント  
-規格変更・新設時の最終承認者や社内プロセス  
-他品種や他社規格との比較・説明ロジック""",  
+        "description": "規格や基準値の設定理由や運用、重要な見直しポイント、承認プロセスなど。",  
         "questions": [  
             "ある規格や検査項目は、どんな背景や根拠で設定されたのですか？",  
             "規格を緩和・廃止する際、何を基準に「ここは絶対に残す」と判断していますか？",  
@@ -61,10 +55,7 @@ TOPICS = [
     {  
         "id": "quality",  
         "name": "品質保証体制・社内判断プロセス",  
-        "description": """品質保証体制の立ち上げや大きな体制変更の背景・理由  
-社内判断プロセスや会議体ごとの役割、キーパーソンの判断基準  
-トラブル発生時の部門間連携ルート、情報共有の仕組み  
-再発防止策の策定・実行・効果検証""",  
+        "description": "品質保証体制の変遷や判断プロセス・部門間連携・再発防止策の運用例。",  
         "questions": [  
             "品質保証体制はどのように立ち上げられ、どんな経緯で変遷してきましたか？",  
             "クレーム発生時、社内でどのような連携や判断プロセスを経て対応していますか？",  
@@ -74,10 +65,7 @@ TOPICS = [
     {  
         "id": "case",  
         "name": "過去事例・ナレッジの記録・活用",  
-        "description": """過去事例（クレーム・品質トラブル・成功・失敗）の事例集やFAQ化  
-事例の分類方法（発生現象別・重大度別など）、記録・整理の仕方  
-どんな情報（原因、確認ポイント、対策、成果）が載っていると役立つか  
-過去の資料・記録の所在や参照方法、記憶に頼らない伝承方法""",  
+        "description": "品質トラブルやクレーム等の事例集・記録方法・FAQ化などナレッジ共有の工夫。",  
         "questions": [  
             "過去のクレームや品質トラブルは、どのように記録・整理されていますか？",  
             "事例集には、どんな項目（原因・確認・直し方・成果など）が載っていると現場で役立ちますか？",  
@@ -87,10 +75,7 @@ TOPICS = [
     {  
         "id": "decision",  
         "name": "判断・意思決定の根拠・本音",  
-        "description": """判断に迷った場面や、今だから言える「やっておけばよかったこと」「本音」  
-規格や基準を決める際の論理構成・説明の仕方（顧客向け・社内向け）  
-失敗や苦労から得た学び・反省点  
-承認プロセスでの葛藤や、当時できなかったこと""",  
+        "description": "判断に迷った場面や実感、本音・説明の根拠・承認プロセスのポイント。",  
         "questions": [  
             "過去の重大な判断で、今ならこうしたかった・本当はやりたかったことはありますか？",  
             "規格や基準を決めるとき、どんな根拠やロジックで説明しましたか？",  
@@ -100,10 +85,7 @@ TOPICS = [
     {  
         "id": "share",  
         "name": "情報共有・伝承時の困りごと・工夫",  
-        "description": """過去の記録や資料が見つからない、関係者が退職・異動している  
-判断根拠や経緯が記憶頼み・口伝になっていることへの不安  
-情報整理やFAQ化、一覧表・フローチャート等の可視化ニーズ  
-質問・ヒアリング時の進め方、聞き返し・深掘りの工夫""",  
+        "description": "資料の散逸や記憶への依存・形式やFAQ可・情報収集や深掘りの工夫。",  
         "questions": [  
             "過去の判断や経緯が記録化されていない場合、どのように情報を集めていますか？",  
             "伝承の際、どのようなフォーマットや整理方法が現場で活用しやすいですか？",  
@@ -179,7 +161,6 @@ def index():
         session["selected_question"] = 0  
   
     if request.method == 'POST':  
-        # 質問選択時  
         if 'select_question' in request.form:  
             t_id = request.form.get("select_topic")  
             q_index = int(request.form.get("select_question"))  
@@ -203,6 +184,34 @@ def index():
     chat_history = session.get("question_histories", {}).get(qkey, {}).get("messages", [])  
     topic = next(t for t in TOPICS if t["id"] == t_id)  
   
+    # 回答進捗（全体・各質問）  
+    histories = session.get("question_histories", {})  
+    answer_status = {}  
+    total_count = 0  
+    total_questions = 0  
+    for t in TOPICS:  
+        tid = t["id"]  
+        answer_status_tid = []  
+        for q_i, q in enumerate(t["questions"]):  
+            qkey = f"{tid}_{q_i}"  
+            msgs = histories.get(qkey, {}).get("messages", [])  
+            count = len([m for m in msgs if m.get("role") == "user"])  
+            pct = min(100, int(round(count * 10)))  
+            answer_status_tid.append({  
+                "count": count,  
+                "percent": pct  
+            })  
+            # 全体進捗は1問10回で100%なので、10回を超過しても10回分のみ計上  
+            total_count += min(count, 10)  
+            total_questions += 1  
+        answer_status[tid] = answer_status_tid  
+  
+    # 全体進捗率を計算（100%超えない）  
+    total_progress = 0  
+    if total_questions > 0:  
+        total_progress = int(round((total_count / (total_questions * 10)) * 100))  
+        total_progress = min(100, total_progress)  
+  
     return render_template(  
         'index.html',  
         topics=TOPICS,  
@@ -212,7 +221,9 @@ def index():
         topic_desc=topic["description"],  
         topic_full=topic,  
         questions=topic["questions"],  
-        session=session  
+        session=session,  
+        answer_status=answer_status,  
+        total_progress=total_progress,  
     )  
   
 @app.route('/send_message', methods=['POST'])  
@@ -262,42 +273,6 @@ def send_message():
     session.modified = True  
     resp = messages[-1]  
     return json.dumps({'response': resp["content"]}), 200, {'Content-Type': 'application/json'}  
-  
-@app.route('/summarize_points', methods=['POST'])  
-def summarize_points():  
-    t_id = session.get("selected_topic")  
-    q_idx = session.get("selected_question")  
-    qkey = f"{t_id}_{q_idx}"  
-    hists = session.get("question_histories", {})  
-    topic = next(t for t in TOPICS if t["id"] == t_id)  
-    question = topic["questions"][q_idx]  
-    user_msgs = [m["content"] for m in hists.get(qkey, {}).get("messages", []) if m["role"] == "user"]  
-    prompt = (  
-        f"カテゴリ:{topic['name']} 質問:{question}\n"  
-        "この会話履歴からユーザーが知りたい観点や不安をリストでまとめてください。\n"  
-        "会話履歴：\n" + "\n".join(user_msgs)  
-    )  
-    response_obj = client.chat.completions.create(  
-        model="gpt-4.1",  
-        messages=[  
-            {"role": "system", "content": "あなたは業務伝承下準備の要約専門AIです。"},  
-            {"role": "user", "content": prompt}  
-        ]  
-    )  
-    summary = response_obj.choices[0].message.content  
-    session["observed_points"] = [p.strip("・- ") for p in summary.strip().split("\n") if p.strip("・- ").strip()]  
-    session.modified = True  
-    return jsonify({'points_summary': summary})  
-  
-@app.route('/download_points', methods=['GET'])  
-def download_points():  
-    points = session.get('observed_points', [])  
-    text = "\n".join(points)  
-    return Response(  
-        text,  
-        mimetype='text/plain',  
-        headers={'Content-Disposition': 'attachment;filename=points.txt'}  
-    )  
   
 if __name__ == '__main__':  
     app.run(debug=True, host='0.0.0.0')  

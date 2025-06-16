@@ -12,6 +12,14 @@
         <!-- サイドバー -->  
         <div class="col-md-3 sidebar">  
             <h4>トピック選択</h4>  
+            <!-- トータル進捗率バー -->  
+            <div class="total-progress my-2">  
+                <span style="font-size: 1.13em; font-weight: bold;">全体進捗率: </span>  
+                <span class="badge badge-primary" style="font-size:1.13em;">{{ total_progress }}%</span>  
+                <div class="progress" style="height: 10px; margin-top:4px;">  
+                    <div class="progress-bar bg-primary" style="width: {{ total_progress }}%;"></div>  
+                </div>  
+            </div>  
             <ul class="topic-list">  
                 {% for t in topics %}  
                 <li>  
@@ -20,7 +28,7 @@
                     </button>  
                     <ul class="question-list" id="questions-{{ t.id }}" style="{% if t.id != selected_topic %}display:none;{% endif %}">  
                         {% for q in t.questions %}  
-                        <li>  
+                        <li style="display:flex; align-items:center;">  
                             <form method="POST" style="display:inline;">  
                                 <input type="hidden" name="select_topic" value="{{ t.id }}">  
                                 <input type="hidden" name="select_question" value="{{ loop.index0 }}">  
@@ -28,6 +36,14 @@
                                     {{ q }}  
                                 </button>  
                             </form>  
+                            <div class="answer-rate ml-2" style="min-width:65px;">  
+                                {% set rate = answer_status[t.id][loop.index0]["percent"] %}  
+                                <span style="font-size:0.93em;">  
+                                    <span class="badge badge-{% if rate==100 %}success{% elif rate>=60 %}info{% else %}secondary{% endif %}">  
+                                        {{ rate }}%  
+                                    </span>  
+                                </span>  
+                            </div>  
                         </li>  
                         {% endfor %}  
                     </ul>  
@@ -35,19 +51,6 @@
                 {% endfor %}  
             </ul>  
             <hr>  
-            <button class="btn btn-primary mb-2" id="summarizeBtn">観点まとめ</button>  
-            <div id="pointsSummaryBlock">  
-                {% if session.get("observed_points") %}  
-                <ul>  
-                    {% for pt in session.get("observed_points") %}  
-                    {% if pt.strip() %}  
-                    <li>{{ pt }}</li>  
-                    {% endif %}  
-                    {% endfor %}  
-                </ul>  
-                <a class="btn btn-success" href="/download_points">観点リストをダウンロード</a>  
-                {% endif %}  
-            </div>  
         </div>  
         <!-- メインコンテンツ -->  
         <div class="col-md-9 main-content">  
@@ -60,7 +63,9 @@
             </div>  
             <div class="mb-3">  
                 <h4>{{ topic_full.name }}</h4>  
-                <pre style="white-space: pre-wrap; font-size:1em;">{{ topic_desc }}</pre>  
+                <div class="topic-desc-short">  
+                    {{ topic_desc }}  
+                </div>  
             </div>  
             {% with messages = get_flashed_messages() %}  
             {% if messages %}  
@@ -186,30 +191,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }  
     });  
     scrollChatToBottom();  
-  
-    // 観点抽出ボタン連動  
-    const summarizeBtn = document.getElementById('summarizeBtn');  
-    const pointsSummaryBlock = document.getElementById('pointsSummaryBlock');  
-    if (summarizeBtn) {  
-        summarizeBtn.addEventListener('click', function() {  
-            summarizeBtn.disabled = true;  
-            summarizeBtn.textContent = "抽出中...";  
-            fetch('/summarize_points', {method: "POST"})  
-            .then(r => r.json())  
-            .then(data => {  
-                const summary = data.points_summary || '';  
-                const points = summary.split("\n").map(l => l.replace(/^(\s*[・\-●\*]?\s*)/, '').trim()).filter(l => l.length);  
-                pointsSummaryBlock.innerHTML = `   <div>   <ul>${points.map(l => `<li>${escapeHtml(l)}</li>`).join('')}</ul>   </div>   <a class="btn btn-success" href="/download_points">観点リストをダウンロード</a>   `;  
-                summarizeBtn.disabled = false;  
-                summarizeBtn.textContent = "観点まとめ";  
-            })  
-            .catch(e => {  
-                pointsSummaryBlock.innerHTML = '<p>観点抽出に失敗しました</p>';  
-                summarizeBtn.disabled = false;  
-                summarizeBtn.textContent = "観点まとめ";  
-            });  
-        });  
-    }  
 });  
 </script>  
 </body>  
